@@ -1,50 +1,90 @@
-# Welcome to your Expo app 👋
+# Parques Recife App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicativo mobile desenvolvido em **React Native com Expo** que permite explorar os parques e praças do Recife, visualizá-los no mapa e fazer check-ins com a localização do usuário.
 
-## Get started
+## 🚀 Tecnologias
 
-1. Install dependencies
+- **React Native** — framework para desenvolvimento mobile multiplataforma
+- **Expo SDK 54** — plataforma de desenvolvimento e build
+- **Expo Location** — acesso à geolocalização do dispositivo
+- **React Native Maps** — exibição de mapas interativos com Google Maps
+- **React Navigation** — navegação entre telas com Stack Navigator
+- **API Dados Abertos Recife** — fonte dos dados de parques e praças (via backend)
+- **Fetch API** — chamadas HTTP para o backend
 
-   ```bash
-   npm install
-   ```
+## 📋 Funcionalidades
 
-2. Start the app
+- **Lista de parques e praças** — exibe os 483 parques e praças do Recife com nome, bairro e tipo
+- **Busca por nome ou bairro** — filtra a lista em tempo real conforme o usuário digita
+- **Detalhes do parque** — exibe informações completas (nome, bairro, área, tipo, endereço) e um mini mapa com a localização do parque
+- **Mapa de parques próximos** — usa a geolocalização do dispositivo para exibir os parques em até 2km do usuário em um mapa interativo
+- **Check-in** — registra a presença do usuário em um parque, salvando sua localização GPS no backend
+- **Histórico de check-ins** — exibe todos os check-ins realizados com nome do parque, bairro, coordenadas e data/hora
 
-   ```bash
-   npx expo start
-   ```
+## 🗂️ Estrutura do projeto
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+parques-recife-app/
+├── src/
+│   ├── screens/
+│   │   ├── ListaScreen.js      # Tela principal com lista e busca
+│   │   ├── DetalhesScreen.js   # Detalhes do parque com mini mapa
+│   │   ├── MapaScreen.js       # Mapa de parques próximos
+│   │   └── HistoricoScreen.js  # Histórico de check-ins
+│   ├── navigation/
+│   │   └── AppNavigator.js     # Configuração das rotas de navegação
+│   └── services/
+│       └── api.js              # Funções de comunicação com o backend
+├── App.js                      # Componente raiz da aplicação
+├── app.json                    # Configuração do Expo
+└── package.json
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## ⚙️ Como executar localmente
 
-## Learn more
+### Pré-requisitos
 
-To learn more about developing your project with Expo, look at the following resources:
+- Node.js v18 ou superior
+- Expo CLI instalado (`npm install -g expo-cli`)
+- App **Expo Go** instalado no celular (Android ou iOS)
+- Backend `parques-recife-api` rodando localmente
+- Git
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Instalação
 
-## Join the community
+```bash
+git clone https://github.com/Benzo171/parques-recife-app
+cd parques-recife-app
+npm install
+```
 
-Join our community of developers creating universal apps.
+### Configuração
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Abre o arquivo `src/services/api.js` e substitui o IP pelo IP local da sua máquina:
+
+```js
+const BACKEND_URL = 'http://SEU_IP_LOCAL:3000';
+```
+
+Para descobrir seu IP local rode `ipconfig` no Windows e copie o **Endereço IPv4**.
+
+### Executar
+
+```bash
+npx expo start
+```
+
+Escaneie o QR code com o app **Expo Go** no celular. O celular e o PC precisam estar na mesma rede Wi-Fi.
+
+## 📱 Telas
+
+| Tela | Descrição |
+|---|---|
+| Lista | Exibe todos os parques com busca por nome/bairro |
+| Detalhes | Informações completas + mini mapa da localização |
+| Parques Próximos | Mapa interativo com parques em até 2km |
+| Histórico | Check-ins realizados com data e coordenadas |
+
+## 📊 Fonte dos dados
+
+Os dados são fornecidos pelo backend `parques-recife-api`, que processa o CSV oficial do **Portal de Dados Abertos da Cidade do Recife**.
