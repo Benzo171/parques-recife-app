@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,47 +6,58 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { salvarCheckIn } from '../services/api';
 
 export default function DetalhesScreen({ route, navigation }) {
-  // Recebe o parque selecionado vindo da tela de lista via route.params
+  // Recebe o parque selecionado vindo da tela de lista
   const { parque } = route.params;
 
-  // Estado que controla o loading enquanto o check-in é salvo
+  // Estado de loading do check-in
   const [salvando, setSalvando] = useState(false);
 
-  // Função principal — pede permissão de localização, captura as coordenadas
-  // e envia o check-in para o backend
+  // Verifica se o parque tem coordenadas válidas para exibir o mapa
+  const temCoordenadas =
+    parque.latitude && parque.longitude &&
+    parque.latitude !== '' && parque.longitude !== '';
+
+  // Coordenadas do parque convertidas para número
+  const coordenadas = temCoordenadas
+    ? {
+        latitude: parseFloat(parque.latitude),
+        longitude: parseFloat(parque.longitude),
+      }
+    : null;
+
+  // Nome do parque para exibição
+  const nomeParque = parque.nome_oficial_equip_urbano || parque.nome_equip_urbano || 'Sem nome';
+  const bairroParque = parque.nome_bairro || 'Não informado';
+
+  // Função que obtém a localização do usuário e salva o check-in no backend
   async function fazerCheckIn() {
     setSalvando(true);
 
-    // Solicita permissão para acessar a localização do dispositivo
+    // Solicita permissão de localização
     const { status } = await Location.requestForegroundPermissionsAsync();
-
     if (status !== 'granted') {
       Alert.alert('Permissão negada', 'Precisamos da sua localização para fazer o check-in.');
       setSalvando(false);
       return;
     }
 
-    // Obtém as coordenadas atuais do dispositivo via GPS
-    const localizacao = await Location.getCurrentPositionAsync({});
-    const { latitude, longitude } = localizacao.coords;
+    // Captura as coordenadas atuais do dispositivo via GPS
+    const loc = await Location.getCurrentPositionAsync({});
+    const { latitude, longitude } = loc.coords;
 
-    // Nome do parque para usar no check-in e na mensagem
-    const nomeParque = parque.nome_oficial_equip_urbano || parque.nome_equip_urbano || 'Sem nome';
-    const bairroParque = parque.nome_bairro || 'Não informado';
-
-    // Envia os dados para o backend — POST /check-in
+    // Envia o check-in para o backend — POST /check-in
     await salvarCheckIn(nomeParque, bairroParque, { latitude, longitude });
 
     setSalvando(false);
-
-    // Exibe confirmação e oferece opção de ir para o histórico
     Alert.alert(
-      'Check-in feito!',
+      'Check-in feito! ✅',
       `Você fez check-in em ${nomeParque}`,
       [
         { text: 'Ver histórico', onPress: () => navigation.navigate('Historico') },
@@ -56,16 +67,13 @@ export default function DetalhesScreen({ route, navigation }) {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Card com as informações do parque vindas do backend/CSV */}
+    <ScrollView style={styles.container}>
+      {/* Card com as informações do parque */}
       <View style={styles.card}>
-        {/* Nome oficial do parque ou nome popular caso não tenha oficial */}
-        <Text style={styles.titulo}>
-          {parque.nome_oficial_equip_urbano || parque.nome_equip_urbano || 'Sem nome'}
-        </Text>
+        <Text style={styles.titulo}>{nomeParque}</Text>
 
         <Text style={styles.label}>Bairro</Text>
-        <Text style={styles.valor}>{parque.nome_bairro || 'Não informado'}</Text>
+        <Text style={styles.valor}>{bairroParque}</Text>
 
         <Text style={styles.label}>Área (m²)</Text>
         <Text style={styles.valor}>{parque.area || 'Não informada'}</Text>
@@ -77,19 +85,33 @@ export default function DetalhesScreen({ route, navigation }) {
         <Text style={styles.valor}>{parque.endereco_equip_urbano || 'Não informado'}</Text>
       </View>
 
-      {/* Botão que dispara o check-in com localização do usuário */}
-      <TouchableOpacity
-        style={styles.botao}
-        onPress={fazerCheckIn}
-        disabled={salvando}
-      >
-        {salvando ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.botaoTexto}>📍 Fazer Check-in aqui</Text>
-        )}
-      </TouchableOpacity>
-    </View>
+      {/* Mini mapa mostrando a localização do parque */}
+      {temCoordenadas && (
+        <View style={styles.mapaContainer}>
+          <Text style={styles.mapaLabel}>📍 Localização do parque</Text>
+          <MapView
+            style={styles.mapa}
+            initialRegion={{
+              latitude: coordenadas.latitude,
+              longitude: coordenadas.longitude,
+              latitudeDelta: 0.005,
+              longitudeDelta: 0.005,
+            }}
+            scrollEnabled={false}
+            zoomEnabled={false}
+          >
+            <Marker
+              coordinate={coordenadas}
+              title={nomeParque}
+              description={bairroParque}
+              pinColor="green"
+            />
+          </MapView>
+        </View>
+      )}
+
+
+    </ScrollView>
   );
 }
 
@@ -104,7 +126,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     elevation: 2,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   titulo: {
     fontSize: 20,
@@ -123,11 +145,29 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: 2,
   },
+  mapaContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    marginBottom: 16,
+  },
+  mapaLabel: {
+    padding: 12,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2e7d32',
+  },
+  mapa: {
+    height: 200,
+    width: '100%',
+  },
   botao: {
     backgroundColor: '#2e7d32',
     padding: 16,
     borderRadius: 10,
     alignItems: 'center',
+    marginBottom: 32,
   },
   botaoTexto: {
     color: '#fff',

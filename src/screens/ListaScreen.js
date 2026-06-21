@@ -6,27 +6,47 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { getParques } from '../services/api';
 
 export default function ListaScreen({ navigation }) {
-  // Estado que armazena a lista de parques vinda do backend
+  // Lista completa de parques vinda do backend
   const [parques, setParques] = useState([]);
 
-  // Estado que controla o loading enquanto os dados carregam
+  // Lista filtrada pela busca
+  const [filtrados, setFiltrados] = useState([]);
+
+  // Texto digitado na busca
+  const [busca, setBusca] = useState('');
+
+  // Loading enquanto carrega os dados
   const [loading, setLoading] = useState(true);
 
-  // Busca os parques assim que a tela é carregada
+  // Busca os parques assim que a tela carrega
   useEffect(() => {
     async function carregar() {
       const dados = await getParques();
       setParques(dados);
+      setFiltrados(dados);
       setLoading(false);
     }
     carregar();
   }, []);
 
-  // Exibe um indicador de carregamento enquanto busca os dados
+  // Filtra os parques conforme o usuário digita na busca
+  function handleBusca(texto) {
+    setBusca(texto);
+    const lower = texto.toLowerCase();
+    // Filtra por nome ou bairro
+    const resultado = parques.filter(p => {
+      const nome = (p.nome_oficial_equip_urbano || p.nome_equip_urbano || '').toLowerCase();
+      const bairro = (p.nome_bairro || '').toLowerCase();
+      return nome.includes(lower) || bairro.includes(lower);
+    });
+    setFiltrados(resultado);
+  }
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -39,26 +59,34 @@ export default function ListaScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>Parques e Praças</Text>
-      <Text style={styles.subtitulo}>{parques.length} locais encontrados</Text>
+      <Text style={styles.subtitulo}>{filtrados.length} locais encontrados</Text>
 
       {/* Botão para abrir o mapa de parques próximos */}
-<TouchableOpacity
-  style={styles.botaoMapa}
-  onPress={() => navigation.navigate('Mapa')}
->
-  <Text style={styles.botaoMapaTexto}>🗺️ Ver parques próximos a mim</Text>
-</TouchableOpacity> 
+      <TouchableOpacity
+        style={styles.botaoMapa}
+        onPress={() => navigation.navigate('Mapa')}
+      >
+        <Text style={styles.botaoMapaTexto}>🗺️ Ver parques próximos a mim</Text>
+      </TouchableOpacity>
 
-      {/* Lista de parques — ao tocar navega para a tela de detalhes */}
+      {/* Campo de busca por nome ou bairro */}
+      <TextInput
+        style={styles.input}
+        placeholder="🔍 Buscar por nome ou bairro..."
+        value={busca}
+        onChangeText={handleBusca}
+        placeholderTextColor="#aaa"
+      />
+
+      {/* Lista de parques filtrados */}
       <FlatList
-        data={parques}
+        data={filtrados}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('Detalhes', { parque: item })}
           >
-            {/* Usa o nome oficial se disponível, senão usa o nome popular */}
             <Text style={styles.nomeParque}>
               {item.nome_oficial_equip_urbano || item.nome_equip_urbano || 'Sem nome'}
             </Text>
@@ -97,9 +125,29 @@ const styles = StyleSheet.create({
   subtitulo: {
     fontSize: 14,
     color: '#888',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  
+  botaoMapa: {
+    backgroundColor: '#2e7d32',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  botaoMapaTexto: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    marginBottom: 12,
+    elevation: 1,
+    color: '#333',
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 10,
@@ -122,16 +170,4 @@ const styles = StyleSheet.create({
     color: '#2e7d32',
     marginTop: 4,
   },
-  botaoMapa: {
-  backgroundColor: '#2e7d32',
-  padding: 12,
-  borderRadius: 8,
-  alignItems: 'center',
-  marginBottom: 16,
-  },
-botaoMapaTexto: {
-  color: '#fff',
-  fontSize: 14,
-  fontWeight: 'bold',
-},
-}); 
+});
